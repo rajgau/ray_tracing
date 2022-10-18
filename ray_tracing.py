@@ -4,7 +4,7 @@ window=pg.display.set_mode((width,height))
 pg.display.set_caption("ray_tracing")
 def update():
     pg.display.update()
-    # window.fill((0,0,0))
+    window.fill((0,0,0))
     for event in pg.event.get():
         if event.type==pg.QUIT:
             pg.quit()
@@ -20,9 +20,9 @@ def dis(x1,y1,z1,x2,y2,y3):return M.sqrt(((x2-x1)**2)+((y2-y1)**2)+((z2-z1)**2))
 def dis2(p1,p2):return M.sqrt(((p1[0]-p2[0])**2)+((p1[1]-p2[1])**2)+((p1[2]-p2[2])**2))
 class MainCamera:  
     def __init__(self,screen):
-        self.pos=np.array([0,0,-0.2])
+        self.pos=np.array([0,0,-2])
         self.isOrthographic = False
-        self.aprature=10
+        self.aprature=2
         self.resolution=screen.resolution
         self.front_buffer=np.ones(shape=(self.resolution[0],self.resolution[1],3))
         self.ray_vectors=None
@@ -33,6 +33,10 @@ class MainCamera:
         for y in range(self.resolution[1]):
             for x in range(self.resolution[0]):
                 dy,dx=y-(self.resolution[1]/2),x-(self.resolution[0]/2)
+                # s=(self.resolution[1]//2)-1
+                # dy = maper(y,0,self.resolution[1]-1,-s,s)
+                # dx = maper(x,0,self.resolution[0]-1,-s,s)
+                # print(dx,dy)
                 mag=M.sqrt((dy**2)+(dx**2)+apratureSQR)
                 ray_vectors[x][y][0]=dx/mag
                 ray_vectors[x][y][1]=dy/mag
@@ -43,8 +47,14 @@ class MainCamera:
         for obj in screen.objects:
             for y in range(self.resolution[1]):
                 for x in range(self.resolution[0]):
-                    colition_data = obj.Colision(self.pos,self.ray_vectors[x][y])
-                    if colition_data:self.front_buffer[x][y][0]=255
+                    colition_data = obj.Colision2(self.pos,self.ray_vectors[x][y])
+                    self.front_buffer[x][y][1]=x*2
+                    self.front_buffer[x][y][2]=y*2
+                    if colition_data:
+                        c=colition_data*3
+                        self.front_buffer[x][y][0]=c
+                        self.front_buffer[x][y][1]=c
+                        self.front_buffer[x][y][2]=c
                     
 class Screen:
     def __init__(self,x,y):
@@ -68,7 +78,7 @@ class Sphere:
         camToSelfVecRay = camToSelfVec/D
         dot_ = np.dot(camToSelfVecRay,ray)
         theta = M.acos(dot_)
-        ray_mag = D*dot_ #******* M.cos(theta) = dot_ ...?
+        ray_mag = D*dot_
         P = M.sqrt((D**2)-(ray_mag**2))
         if P<=self.r:
             return 1
@@ -76,14 +86,33 @@ class Sphere:
             ray_hit_mag = ray_mag-dv
             
         return 0
+    def Colision2(self,cam_pos,ray):
+        x1,y1,z1 = cam_pos
+        x2,y2,z2 = ray
+        a,b,c    = self.pos
+        
+        Cs = x2*x2+y2*y2+z2*z2+x1*x1+y1*y1+z1*z1-2*(x1*x2+y1*y2+z1*z2)
+        Cl = 2*(x1*(x2-x1)-a*(x2-x1)+y1*(y2-y1)-b*(y2-y1)+z1*(z2-z1)-c*(z2-z1))
+        Cc = x1*x1+y1*y1+z1*z1+a*a+b*b+c*c-2*(a*x1+b*y1+c*z1)-self.r*self.r
+        
+        disc = Cl**2-4*Cs*Cc
+        if disc >= 0:
+            t = (-Cl+disc)/(2*Cs)
+            return t
+        return 0
 
-screen=Screen(200,200)
-mainCamera = MainCamera(screen)
+a=3.1415/2
+while update():
+    s = int(maper(M.sin(a),-1,1,10,100))
+    # print(s)
+    screen=Screen(s,s)
+    mainCamera = MainCamera(screen)
 
-screen.objects.append(Sphere(0,0,3,3))
-
-mainCamera.cast_rays(screen)
-screen.set_pixels(mainCamera)
-while update():pass
+    screen.objects.append(Sphere(0,0,5.01,3))
+    
+    mainCamera.cast_rays(screen)
+    screen.set_pixels(mainCamera)
+    
+    # a+=0.01
     
     
