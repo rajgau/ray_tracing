@@ -4,11 +4,15 @@ window=pg.display.set_mode((width,height))
 pg.display.set_caption("ray_tracing")
 def update():
     pg.display.update()
-    window.fill((0,0,0))
+    # window.fill((0,0,0))
     for event in pg.event.get():
         if event.type==pg.QUIT:
             pg.quit()
             return False
+        if event.type == pg.KEYDOWN:
+            if event.key == pg.K_ESCAPE:
+                pg.quit()
+                return False
     return True
 def maper(v,In,Im,On,Om):
     try:val=(((v-In)/(Im-In))*(Om-On))+On
@@ -18,10 +22,10 @@ def maper(v,In,Im,On,Om):
     return val
 def dis(x1,y1,z1,x2,y2,y3):return M.sqrt(((x2-x1)**2)+((y2-y1)**2)+((z2-z1)**2))
 def dis2(p1,p2):return M.sqrt(((p1[0]-p2[0])**2)+((p1[1]-p2[1])**2)+((p1[2]-p2[2])**2))
+
 class MainCamera:  
     def __init__(self,screen):
         self.pos=np.array([0,0,-2])
-        self.isOrthographic = False
         self.aprature=2
         self.resolution=screen.resolution
         self.front_buffer=np.ones(shape=(self.resolution[0],self.resolution[1],3))
@@ -32,26 +36,24 @@ class MainCamera:
         ray_vectors=np.ones((self.resolution[0],self.resolution[1],3))
         for y in range(self.resolution[1]):
             for x in range(self.resolution[0]):
-                dy,dx=y-(self.resolution[1]/2),x-(self.resolution[0]/2)
-                # s=(self.resolution[1]//2)-1
-                # dy = maper(y,0,self.resolution[1]-1,-s,s)
-                # dx = maper(x,0,self.resolution[0]-1,-s,s)
-                # print(dx,dy)
+                # dy,dx=y-(self.resolution[1]/2),x-(self.resolution[0]/2) #============= main =============
+                
+                dy = (y-(self.resolution[1]/2))/(self.resolution[1]/2)
+                dx = (x-(self.resolution[0]/2))/(self.resolution[0]/2)
+                
                 mag=M.sqrt((dy**2)+(dx**2)+apratureSQR)
                 ray_vectors[x][y][0]=dx/mag
                 ray_vectors[x][y][1]=dy/mag
                 ray_vectors[x][y][2]=self.aprature/mag
         self.ray_vectors=ray_vectors
     def cast_rays(self,screen):
-        disToObject=np.ones(self.resolution)
         for obj in screen.objects:
             for y in range(self.resolution[1]):
                 for x in range(self.resolution[0]):
                     colition_data = obj.Colision2(self.pos,self.ray_vectors[x][y])
-                    self.front_buffer[x][y][1]=x*2
-                    self.front_buffer[x][y][2]=y*2
                     if colition_data:
-                        c=colition_data*3
+                        c=colition_data*4
+                        # print(c)
                         self.front_buffer[x][y][0]=c
                         self.front_buffer[x][y][1]=c
                         self.front_buffer[x][y][2]=c
@@ -101,18 +103,18 @@ class Sphere:
             return t
         return 0
 
-a=3.1415/2
-while update():
-    s = int(maper(M.sin(a),-1,1,10,100))
-    # print(s)
-    screen=Screen(s,s)
-    mainCamera = MainCamera(screen)
+screen=Screen(40,40)
+mainCamera = MainCamera(screen)
 
-    screen.objects.append(Sphere(0,0,5.01,3))
+screen.objects.append(Sphere(0,0,50,3))
+
+###################
+
+mainCamera.cast_rays(screen)
+screen.set_pixels(mainCamera)
+
+while update():
+    pass
     
-    mainCamera.cast_rays(screen)
-    screen.set_pixels(mainCamera)
-    
-    # a+=0.01
     
     
