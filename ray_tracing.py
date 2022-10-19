@@ -2,9 +2,9 @@ import pygame as pg,numpy as np,math as M
 width,height=400,400
 window=pg.display.set_mode((width,height))
 pg.display.set_caption("ray_tracing")
-def update():
+def update(trace=True):
     pg.display.update()
-    # window.fill((0,0,0))
+    if not trace:window.fill((0,0,0))
     for event in pg.event.get():
         if event.type==pg.QUIT:
             pg.quit()
@@ -48,12 +48,18 @@ class MainCamera:
         self.ray_vectors=ray_vectors
     def cast_rays(self,screen):
         for obj in screen.objects:
+            mini = 1000
+            maxi = -1000
             for y in range(self.resolution[1]):
                 for x in range(self.resolution[0]):
-                    colition_data = obj.Colision2(self.pos,self.ray_vectors[x][y])
-                    if colition_data:
-                        c=colition_data*4
-                        # print(c)
+                    colition_point = obj.Colision(self.pos,self.ray_vectors[x][y])
+                    if colition_point.any():
+                        dist = dis2(self.pos,colition_point)
+                        if dist<mini:mini=dist
+                        if dist>maxi:maxi=dist
+                        c=maper(dist,mini,maxi,0,255)
+                        if c>255:c=255
+                        if c<0:c=0
                         self.front_buffer[x][y][0]=c
                         self.front_buffer[x][y][1]=c
                         self.front_buffer[x][y][2]=c
@@ -68,13 +74,14 @@ class Screen:
         for y in range(self.resolution[1]):
             for x in range(self.resolution[0]):
                 pg.draw.rect(window,mainCamera.front_buffer[x][y],(x*side_x,y*side_y,side_x,side_y))
+        mainCamera.front_buffer = np.ones(shape=(self.resolution[0],self.resolution[1],3))
 
 class Sphere:
     def __init__(self,x,y,z,r):
         self.pos = np.array((x,y,z))
         self.col = (255,0,0)
         self.r = r
-    def Colision(self,cam_pos,ray):
+    def Colision2(self,cam_pos,ray):
         D=dis2(self.pos,cam_pos)
         camToSelfVec = self.pos-cam_pos
         camToSelfVecRay = camToSelfVec/D
@@ -88,7 +95,7 @@ class Sphere:
             ray_hit_mag = ray_mag-dv
             
         return 0
-    def Colision2(self,cam_pos,ray):
+    def Colision(self,cam_pos,ray):
         x1,y1,z1 = cam_pos
         x2,y2,z2 = ray
         a,b,c    = self.pos
@@ -99,22 +106,27 @@ class Sphere:
         
         disc = Cl**2-4*Cs*Cc
         if disc >= 0:
-            t = (-Cl+disc)/(2*Cs)
-            return t
-        return 0
+            t = (M.sqrt(disc)-Cl)/(2*Cs)
+            return np.array((ray*t)+cam_pos)
+        return np.array((0,0,0))
 
-screen=Screen(40,40)
-mainCamera = MainCamera(screen)
+screen=Screen(50,50) #-----1
+mainCamera = MainCamera(screen)#------2
 
-screen.objects.append(Sphere(0,0,50,3))
+screen.objects.append(Sphere(0,0,20,3))#-----3
 
 ###################
 
-mainCamera.cast_rays(screen)
-screen.set_pixels(mainCamera)
+mainCamera.cast_rays(screen)#-------4
+screen.set_pixels(mainCamera)#-------5
 
+a=0
 while update():
-    pass
+    # m=maper(M.sin(a),-1,1,0.1,4)
+    # mainCamera.cast_rays(screen)#-------4
+    # screen.set_pixels(mainCamera)#-------5
+    a+=0.01
+    # print(m)
     
     
     
