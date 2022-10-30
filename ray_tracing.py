@@ -24,7 +24,7 @@ def maper(v,In,Im,On,Om):
 def dis(x1,y1,z1,x2,y2,y3):return M.sqrt(((x2-x1)**2)+((y2-y1)**2)+((z2-z1)**2))
 def dis2(p1,p2):return M.sqrt(((p1[0]-p2[0])**2)+((p1[1]-p2[1])**2)+((p1[2]-p2[2])**2))
 
-Game_light=np.array((20,10,2))
+Game_light=np.array((-20,10,2))
 
 class MainCamera:  
     def __init__(self,screen):
@@ -57,9 +57,9 @@ class MainCamera:
                     if colition_point.any():
                         nv=obj.normal(colition_point)
                         lv=(Game_light-obj.pos)/dis2(Game_light,obj.pos)
-                        dot = np.dot(nv,lv)            # ^^^^^^
+                        # dot = np.dot(nv,lv)            # ^^^^^^
                         # dot = (np.dot(nv,lv)/2)+0.5    # /\/\/\/\
-                        # dot = max(np.dot(nv,lv),0)       # ^_^_^_
+                        dot = max(np.dot(nv,lv),0)       # ^_^_^_
                         col = abs(dot * obj.col)
                         self.front_buffer[x][y][0]=col[0]
                         self.front_buffer[x][y][1]=col[1] 
@@ -81,7 +81,7 @@ class Screen:
 class Sphere:
     def __init__(self,x,y,z,r):
         self.pos = np.array((x,y,z))
-        self.col = np.array((250,180,155))
+        self.col = np.array((255,255,255))
         self.r = r
     def Colision(self,cam_pos,ray):
         D=dis2(self.pos,cam_pos)
@@ -127,10 +127,11 @@ class Sphere:
         return np.array((0,0,0))
     def normal(self,p):return (self.pos-p)/dis2(self.pos,p)
 
-screen=Screen(200,200) #-----1
+screen=Screen(100,100) #-----1
 mainCamera = MainCamera(screen)#------2
 
-screen.objects.append(Sphere(0,0,10,5))#-----3
+screen.objects.append(Sphere(-4.5,0,19,6))#-----3
+screen.objects.append(Sphere(4.5,0,19,6))#-----3
 
 ###################
 
@@ -139,8 +140,15 @@ screen.set_pixels(mainCamera)#-------5
 
 a=0
 while update():
-    # m=maper(M.sin(a),-1,1,0.1,4)
-    a+=0.01
+    m=maper(M.sin(a),-1,1,-20,20)
+    n=maper(M.sin(a+(3.1415/2)),-1,1,-20,20)
+    
+    Game_light=np.array((m,n,2))
+    screen.objects[0].col[1]=(m+20)*4
+    screen.objects[0].col[0]=(n+20)*4
+    mainCamera.cast_rays(screen)#-------4
+    screen.set_pixels(mainCamera)#-------5
+    a+=0.09
     # print(m)
     
     
